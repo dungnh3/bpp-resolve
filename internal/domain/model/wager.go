@@ -11,7 +11,7 @@ type Wager struct {
 	SellingPercentage   int       `json:"selling_percentage"`
 	SellingPrice        float64   `json:"selling_price"`
 	CurrentSellingPrice float64   `json:"current_selling_price"`
-	PercentageSold      *int      `json:"percentage_sold"`
-	AmountSold          *int      `json:"amount_sold"`
+	PercentageSold      *float32  `json:"percentage_sold"`
+	AmountSold          *float64  `json:"amount_sold"`
 	PlacedAt            time.Time `json:"placed_at" gorm:"<-:create;autoCreateTime"`
 }

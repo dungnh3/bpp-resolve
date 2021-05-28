@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/dungnh3/bpp-resolve/internal/domain/model"
 	"github.com/dungnh3/bpp-resolve/internal/domain/repository"
+	"github.com/dungnh3/bpp-resolve/internal/dto"
 	"github.com/go-logr/logr"
 )
 
@@ -20,25 +21,51 @@ func NewUseCase(logger logr.Logger, repo repository.IRepository) *UseCase {
 	}
 }
 
-func (u *UseCase) CreateWager(ctx context.Context, wager *model.Wager) error {
-	return u.repo.RecordWager(ctx, wager)
+func (u *UseCase) InitializeWager(ctx context.Context, wagerDto *dto.CreateWagerDto) (*model.Wager, error) {
+	wager := &model.Wager{
+		TotalWagerValue:     wagerDto.TotalWagerValue,
+		Odds:                wagerDto.Odds,
+		SellingPercentage:   wagerDto.SellingPercentage,
+		SellingPrice:        wagerDto.SellingPrice,
+		CurrentSellingPrice: wagerDto.SellingPrice,
+	}
+	if err := u.repo.InitializeWager(ctx, wager); err != nil {
+		return nil, err
+	}
+	return wager, nil
 }
 
 func (u *UseCase) FindWager(ctx context.Context, offset, limit int) ([]*model.Wager, error) {
-	return u.repo.ListWager(ctx, offset, limit)
+	return u.repo.FindWagers(ctx, offset, limit)
 }
 
-func (u *UseCase) BuyWager(ctx context.Context, wagerID uint32, buyingPrice float64) error {
+func (u *UseCase) BuyWager(ctx context.Context, wagerID uint32, buyingPrice float64) (*model.Purchase, error) {
 	wager, err := u.repo.FindWagerByID(ctx, wagerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// buying_price must be lesser or equal to current_selling_price of the wager_id
 	if buyingPrice > wager.CurrentSellingPrice {
-		return errors.New("request invalid! buying_price must be lesser or equal to current_selling_pric")
+		return nil, errors.New("request invalid! buying_price must be lesser or equal to current_selling_price")
 	}
 
+	purchase := &model.Purchase{
+		WagerID:     wagerID,
+		BuyingPrice: buyingPrice,
+	}
 
-	return nil
+	if err = u.repo.Transaction(func(r repository.IRepository) error {
+		if err := r.RecordWagerPriceByID(ctx, wagerID, buyingPrice, wager.SellingPrice); err != nil {
+			return err
+		}
+
+		if err := r.RecordPurchase(ctx, purchase); err != nil {
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	return purchase, nil
 }

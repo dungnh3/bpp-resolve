@@ -1,72 +1,53 @@
 package repository
 
 import (
-	"context"
-	"github.com/dungnh3/bpp-resolve/internal/domain/model"
+	"github.com/go-logr/logr"
 	"gorm.io/gorm"
 )
 
 type IRepository interface {
-	RecordWager(ctx context.Context, wager *model.Wager) error
-	FindWagerByID(ctx context.Context, id uint32) (*model.Wager, error)
-	UpdateWagerByID(ctx context.Context, wager *model.Wager) error
-	ListWager(ctx context.Context, offset, limit int) ([]*model.Wager, error)
+	WagerRepository
+	PurchaseRepository
 
-	RecordPurchase(ctx context.Context, purchase *model.Purchase) error
+	Transaction(txFunc func(IRepository) error) error
 }
 
 type Repository struct {
-	db *gorm.DB
+	db     *gorm.DB
+	logger logr.Logger
 }
 
-func (r *Repository) FindWagerByID(ctx context.Context, id uint32) (*model.Wager, error) {
-	panic("implement me")
-}
-
-func (r *Repository) UpdateWagerByID(ctx context.Context, wager *model.Wager) error {
-	tx := r.db.WithContext(ctx).Model(wager).Updates(model.Wager{
-		CurrentSellingPrice: wager.CurrentSellingPrice,
-		PercentageSold:      wager.PercentageSold,
-		AmountSold:          wager.AmountSold,
-	})
-
-	if err := tx.Error; err != nil {
-		return err
-	}
-
-	if rowsAffected := tx.RowsAffected; rowsAffected != 1 {
-		return ErrRecordAffectedNotExpected
-	}
-	return nil
-}
-
-func NewRepository(db *gorm.DB) *Repository {
+func NewRepository(db *gorm.DB, logger logr.Logger) *Repository {
 	return &Repository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}
 }
 
-func (r *Repository) RecordWager(ctx context.Context, wager *model.Wager) error {
-	tx := r.db.WithContext(ctx).Create(wager)
-	if err := tx.Error; err != nil {
+func (r *Repository) WithTx(tx *gorm.DB) *Repository {
+	newRepo := *r
+	newRepo.db = tx
+	return &newRepo
+}
+
+func (r *Repository) Transaction(txFunc func(IRepository) error) error {
+	tx := r.db.Begin()
+	defer func() {
+		if rc := recover(); rc != nil {
+			r.logger.Error(nil, "rollback now because listening recover: %v \n", rc)
+			if execErr := tx.Rollback().Error; execErr != nil {
+				r.logger.Error(execErr, "exception error when execute rollback")
+			}
+			panic(rc)
+		}
+	}()
+
+	err := txFunc(r.WithTx(tx))
+	if err != nil {
+		if execErr := tx.Rollback().Error; execErr != nil {
+			r.logger.Error(execErr, "exception error when execute rollback")
+		}
 		return err
 	}
-	return nil
-}
-
-func (r *Repository) ListWager(ctx context.Context, offset, limit int) ([]*model.Wager, error) {
-	var wagers []*model.Wager
-	tx := r.db.WithContext(ctx).Limit(limit).Offset(offset).Find(&wagers)
-	if err := tx.Error; err != nil {
-		return nil, err
-	}
-	return wagers, nil
-}
-
-func (r *Repository) RecordPurchase(ctx context.Context, purchase *model.Purchase) error {
-	tx := r.db.WithContext(ctx).Create(purchase)
-	if err := tx.Error; err != nil {
-		return err
-	}
-	return nil
+	return tx.Commit().Error
 }

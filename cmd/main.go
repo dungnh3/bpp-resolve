@@ -2,15 +2,20 @@ package main
 
 import (
 	"github.com/dungnh3/bpp-resolve/config"
-	"github.com/dungnh3/bpp-resolve/internal/domain/model"
 	"github.com/dungnh3/bpp-resolve/internal/server"
 	"github.com/dungnh3/bpp-resolve/internal/service"
 	"github.com/go-logr/logr"
 	"github.com/urfave/cli"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"log"
 	"os"
+
+	migrateV4 "github.com/golang-migrate/migrate/v4"
+	// import mysql
+	_ "github.com/golang-migrate/migrate/v4/database/mysql"
+	// import file
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	// import go_bin_data
+	_ "github.com/golang-migrate/migrate/v4/source/go_bindata"
 )
 
 var (
@@ -43,9 +48,9 @@ func run(args []string) error {
 			Action: serverAction,
 		},
 		{
-			Name:   "auto-migrate",
-			Usage:  "auto migration",
-			Action: migrate,
+			Name:   "migrate-up",
+			Usage:  "auto migration up",
+			Action: migrateUp,
 		},
 	}
 
@@ -76,17 +81,15 @@ func serverAction(cliCtx *cli.Context) error {
 	return nil
 }
 
-func migrate(cliCtx *cli.Context) error {
-	db, err := gorm.Open(mysql.Open(cfg.MySQL.DSN()), &gorm.Config{})
+func migrateUp(cliCtx *cli.Context) error {
+	m, err := migrateV4.New("file://migrations", cfg.MySQL.String())
 	if err != nil {
+		logger.Error(err, "error create migration", err.Error())
 		return err
 	}
 
-	err = db.Debug().AutoMigrate(
-		&model.Wager{},
-		&model.Purchase{},
-	)
-	if err != nil {
+	if err = m.Up(); err != nil && err != migrateV4.ErrNoChange {
+		logger.Error(err, "error when migration up", err.Error())
 		return err
 	}
 	return nil

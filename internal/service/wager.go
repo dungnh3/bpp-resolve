@@ -1,7 +1,6 @@
 package service
 
 import (
-	"github.com/dungnh3/bpp-resolve/internal/domain/model"
 	"github.com/dungnh3/bpp-resolve/internal/dto"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -24,7 +23,7 @@ func (s *Service) IsValidRequest(wager *dto.CreateWagerDto) bool {
 	return true
 }
 
-func (s *Service) Create(ctx *gin.Context) {
+func (s *Service) InitializeWager(ctx *gin.Context) {
 	var wagerDto dto.CreateWagerDto
 	if err := ctx.ShouldBindJSON(&wagerDto); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBadRequest.Error()})
@@ -36,14 +35,8 @@ func (s *Service) Create(ctx *gin.Context) {
 		return
 	}
 
-	wager := &model.Wager{
-		TotalWagerValue:     wagerDto.TotalWagerValue,
-		Odds:                wagerDto.Odds,
-		SellingPercentage:   wagerDto.SellingPercentage,
-		SellingPrice:        wagerDto.SellingPrice,
-		CurrentSellingPrice: wagerDto.SellingPrice,
-	}
-	if err := s.uc.CreateWager(ctx, wager); err != nil {
+	wager, err := s.uc.InitializeWager(ctx, &wagerDto)
+	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -52,7 +45,7 @@ func (s *Service) Create(ctx *gin.Context) {
 	return
 }
 
-func (s *Service) List(ctx *gin.Context) {
+func (s *Service) ListWagers(ctx *gin.Context) {
 	page, err := strconv.Atoi(ctx.Query("page"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBadRequest.Error()})
@@ -76,7 +69,7 @@ func (s *Service) List(ctx *gin.Context) {
 	return
 }
 
-func (s *Service) Buy(ctx *gin.Context) {
+func (s *Service) BuyWager(ctx *gin.Context) {
 	wagerId, err := strconv.Atoi(ctx.Param("wager_id"))
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBadRequest.Error()})
@@ -84,11 +77,17 @@ func (s *Service) Buy(ctx *gin.Context) {
 	}
 
 	var buyingWagerDto dto.BuyingWagerDto
-	if err := ctx.ShouldBindJSON(&buyingWagerDto); err != nil {
+	if err = ctx.ShouldBindJSON(&buyingWagerDto); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBadRequest.Error()})
 		return
 	}
 
-	s.uc.BuyWager(ctx, uint32(wagerId), buyingWagerDto.BuyingPrice)
+	purchase, err := s.uc.BuyWager(ctx, uint32(wagerId), buyingWagerDto.BuyingPrice)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, purchase)
 	return
 }

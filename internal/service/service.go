@@ -19,7 +19,7 @@ type Service struct {
 func NewService(cfg *config.Config) (*Service, error) {
 	logger := cfg.Logger.MustBuildLogR()
 	db := mustConnectMySQL(&cfg.MySQL)
-	repo := repository.NewRepository(db)
+	repo := repository.NewRepository(db, logger)
 	uc := usecase.NewUseCase(logger, repo)
 
 	svc := &Service{

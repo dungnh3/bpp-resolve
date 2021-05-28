@@ -17,13 +17,13 @@ func (s *Server) Register(svc *service.Service) error {
 
 	wagerGr := s.router.Group("/wagers")
 	{
-		wagerGr.POST("", svc.Create)
-		wagerGr.GET("", svc.List)
+		wagerGr.POST("", svc.InitializeWager)
+		wagerGr.GET("", svc.ListWagers)
 	}
 
 	buyGr := s.router.Group("/buy/:wager_id")
 	{
-		buyGr.POST("", svc.Buy)
+		buyGr.POST("", svc.BuyWager)
 	}
 	return nil
 }
