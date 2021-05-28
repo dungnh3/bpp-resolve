@@ -18,7 +18,7 @@ type Service struct {
 
 func NewService(cfg *config.Config) (*Service, error) {
 	logger := cfg.Logger.MustBuildLogR()
-	db := mustConnectMySQL(&cfg.MySQL)
+	db := mustConnectMySQL(&cfg.MySQL, logger)
 	repo := repository.NewRepository(db, logger)
 	uc := usecase.NewUseCase(logger, repo)
 
@@ -29,7 +29,7 @@ func NewService(cfg *config.Config) (*Service, error) {
 	return svc, nil
 }
 
-func mustConnectMySQL(cfg *database.MySQLConfig) *gorm.DB {
+func mustConnectMySQL(cfg *database.MySQLConfig, logger logr.Logger) *gorm.DB {
 	db, err := gorm.Open(mysql.Open(cfg.DSN()), &gorm.Config{})
 	if err != nil {
 		panic(err)
@@ -48,5 +48,6 @@ func mustConnectMySQL(cfg *database.MySQLConfig) *gorm.DB {
 	if err != nil {
 		panic(err)
 	}
+	logger.Info("connect database success", "host", cfg.Host, "port", cfg.Port, "database", cfg.Database)
 	return db
 }

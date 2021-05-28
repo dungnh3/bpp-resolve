@@ -1,4 +1,4 @@
-create table wagers
+create table if not exists wagers
 (
     id                    bigint unsigned auto_increment
         primary key,
@@ -15,7 +15,7 @@ create table wagers
 );
 
 
-create table purchases
+create table if not exists purchases
 (
     id           int unsigned auto_increment
         primary key,

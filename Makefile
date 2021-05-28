@@ -17,6 +17,9 @@ mock:
 test:
 	go test -race -count=1 -v -cover ./...
 
+start:
+	chmod +x start.sh
+	./start.sh
 
 
 # BUILD DOCKER IMAGE

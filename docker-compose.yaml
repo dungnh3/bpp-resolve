@@ -10,3 +10,32 @@ services:
     environment:
       MYSQL_DATABASE: test
       MYSQL_ROOT_PASSWORD: secret
+    networks:
+      - bpp_network
+
+  migration:
+    build: .
+    image: server
+    environment:
+      MYSQL__HOST: "db"
+    command: ./runtime migrate
+    depends_on:
+      - db
+    networks:
+      - bpp_network
+
+  server:
+    image: server
+    ports:
+      - "8080:8080"
+    environment:
+      MYSQL__HOST: "db"
+    depends_on:
+      - db
+      - migration
+    networks:
+      - bpp_network
+
+networks:
+  bpp_network:
+    driver: bridge

@@ -51,7 +51,7 @@ func (c MySQLConfig) String() string {
 // MySQLDefaultConfig returns default config for mysql, usually use on development.
 func MySQLDefaultConfig() MySQLConfig {
 	return MySQLConfig{Config{
-		Host:     "127.0.0.1",
+		Host:     "0.0.0.0",
 		Port:     3306,
 		Database: "test",
 		Username: "root",

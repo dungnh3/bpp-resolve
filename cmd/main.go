@@ -48,14 +48,9 @@ func run(args []string) error {
 			Action: serverAction,
 		},
 		{
-			Name:   "migrate-up",
-			Usage:  "auto migration up",
-			Action: migrateUp,
-		},
-		{
-			Name:   "migrate-down",
-			Usage:  "auto migration down",
-			Action: migrateDown,
+			Name:   "migrate",
+			Usage:  "auto migration",
+			Action: migrate,
 		},
 	}
 
@@ -86,7 +81,7 @@ func serverAction(cliCtx *cli.Context) error {
 	return nil
 }
 
-func migrateUp(cliCtx *cli.Context) error {
+func migrate(cliCtx *cli.Context) error {
 	m, err := migrateV4.New("file://migrations", cfg.MySQL.String())
 	if err != nil {
 		logger.Error(err, "error create migration", err.Error())
@@ -97,21 +92,6 @@ func migrateUp(cliCtx *cli.Context) error {
 		logger.Error(err, "error when migration up", err.Error())
 		return err
 	}
-	logger.Info("migrate up success!")
-	return nil
-}
-
-func migrateDown(cliCtx *cli.Context) error {
-	m, err := migrateV4.New("file://migrations", cfg.MySQL.String())
-	if err != nil {
-		logger.Error(err, "error create migration", err.Error())
-		return err
-	}
-
-	if err = m.Steps(-1); err != nil {
-		logger.Error(err, "error when migration down", err.Error())
-		return err
-	}
-	logger.Info("migrate down success!")
+	logger.Info("migrate success!")
 	return nil
 }
