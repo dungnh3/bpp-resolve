@@ -1,8 +1,8 @@
 package conf
 
 import (
-	"github.com/tikivn/ims-library/pkg/library/log"
-	"github.com/tikivn/ims-library/pkg/library/server"
+	"github.com/dungnh3/bpp-resolve/pkg/log"
+	"github.com/dungnh3/bpp-resolve/pkg/server"
 )
 
 // deploy env.
