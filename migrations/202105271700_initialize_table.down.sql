@@ -1,3 +1,3 @@
-drop table wagers;
+drop table if exists wagers;
 
-drop table purchases;
+drop table if exists purchases;

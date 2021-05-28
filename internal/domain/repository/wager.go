@@ -4,12 +4,11 @@ import (
 	"context"
 	"github.com/dungnh3/bpp-resolve/internal/domain/model"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type WagerRepository interface {
 	InitializeWager(ctx context.Context, wager *model.Wager) error
-	FindWagerByID(ctx context.Context, id uint32) (*model.Wager, error)
+	FindWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error)
 	RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice, sellingPrice float64) error
 	FindWagers(ctx context.Context, offset, limit int) ([]*model.Wager, error)
 }
@@ -31,26 +30,22 @@ func (r *Repository) FindWagers(ctx context.Context, offset, limit int) ([]*mode
 	return wagers, nil
 }
 
-func (r *Repository) FindWagerByID(ctx context.Context, id uint32) (*model.Wager, error) {
-	panic("implement me")
+func (r *Repository) FindWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error) {
+	var wager model.Wager
+	tx := r.db.WithContext(ctx).First(&wager, wagerId)
+	if err := tx.Error; err != nil {
+		return nil, err
+	}
+	return &wager, nil
 }
 
 func (r *Repository) RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice float64, sellingPrice float64) error {
 	tx := r.db.WithContext(ctx).Model(&model.Wager{}).
 		Where("id = ?", wagerId).
 		Updates(map[string]interface{}{
-			"current_selling_price": gorm.Expr("? - ?",
-				clause.Column{Table: clause.CurrentTable, Name: "current_selling_price"},
-				buyingPrice,
-			),
-			"amount_sold": gorm.Expr("? + ?",
-				clause.Column{Table: clause.CurrentTable, Name: "amount_sold"},
-				buyingPrice,
-			),
-			"percentage_sold": gorm.Expr("? + ?",
-				clause.Column{Table: clause.CurrentTable, Name: "percentage_sold"},
-				100*buyingPrice/sellingPrice,
-			),
+			"current_selling_price": gorm.Expr("current_selling_price - ?", buyingPrice),
+			"amount_sold":           gorm.Expr("IFNULL(amount_sold, 0) + ?", buyingPrice),
+			"percentage_sold":       gorm.Expr("IFNULL(percentage_sold, 0) + ?", 100*buyingPrice/sellingPrice),
 		})
 
 	if err := tx.Error; err != nil {
