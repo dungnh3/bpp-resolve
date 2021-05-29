@@ -20,4 +20,12 @@ var (
 	ErrSellingPriceValueMustGreaterThan0 = errors.New("must be specified as a positive decimal value to two decimal places")
 	// ErrSellingPriceValue
 	ErrSellingPriceValue = errors.New("must be greater than total_wager_value * (selling_percentage / 100)")
+
+	// ErrPageValue
+	ErrPageValue = errors.New("page must be greater than or equal to 0")
+
+	// ErrWagerIdInvalid
+	ErrWagerIdInvalid = errors.New("wager_id invalid")
+	// ErrBuyingPriceInvalid
+	ErrBuyingPriceInvalid = errors.New("buying price must be specified as a positive integer above 0")
 )

@@ -68,10 +68,19 @@ func (s *Service) ListWagers(ctx *gin.Context) {
 		return
 	}
 
+	if page < 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrPageValue.Error()})
+		return
+	}
+
+	if limit > 25 {
+		limit = 25
+	}
+
 	offset := page - 1
 	wagers, err := s.uc.FindWager(ctx, offset, limit)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBadRequest.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
@@ -89,6 +98,16 @@ func (s *Service) BuyWager(ctx *gin.Context) {
 	var buyingWagerDto dto.BuyingWagerDto
 	if err = ctx.ShouldBindJSON(&buyingWagerDto); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBadRequest.Error()})
+		return
+	}
+
+	if wagerId <= 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrWagerIdInvalid.Error()})
+		return
+	}
+
+	if buyingWagerDto.BuyingPrice.LessThanOrEqual(decimal.NewFromInt(0)) {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrBuyingPriceInvalid.Error()})
 		return
 	}
 
