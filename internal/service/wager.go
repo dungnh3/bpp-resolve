@@ -3,6 +3,7 @@ package service
 import (
 	"github.com/dungnh3/bpp-resolve/internal/dto"
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"net/http"
 	"strconv"
 )
@@ -11,13 +12,13 @@ func (s *Service) IsValidRequest(wager *dto.CreateWagerDto) bool {
 	if wager.TotalWagerValue <= 0 || // total_wager_value must be specified as a positive integer above 0
 		wager.Odds <= 0 || // odds must be specified as a positive integer above 0
 		wager.SellingPercentage > 100 || wager.SellingPercentage < 1 || // selling_percentage must be specified as an integer between 1 and 100
-		wager.SellingPrice < 0 { // selling_price must be specified as a positive decimal value to two decimal places, it is a monetary value
+		wager.SellingPrice.LessThan(decimal.NewFromInt(0)) { // selling_price must be specified as a positive decimal value to two decimal places, it is a monetary value
 		return false
 	}
 
 	// selling_price must be greater than total_wager_value * (selling_percentage / 100)
 	sp := float64(wager.TotalWagerValue) * float64(wager.SellingPercentage) / 100
-	if wager.SellingPrice <= sp {
+	if wager.SellingPrice.LessThanOrEqual(decimal.NewFromFloat(sp)) {
 		return false
 	}
 	return true

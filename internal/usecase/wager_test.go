@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/dungnh3/bpp-resolve/internal/domain/model"
 	"github.com/dungnh3/bpp-resolve/internal/dto"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,15 +28,15 @@ func (suite *TestServiceSuite) TestUseCase_InitializeWager() {
 					TotalWagerValue:   1000,
 					Odds:              20,
 					SellingPercentage: 50,
-					SellingPrice:      800,
+					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
 			want: &model.Wager{
 				TotalWagerValue:     1000,
 				Odds:                20,
 				SellingPercentage:   50,
-				SellingPrice:        800,
-				CurrentSellingPrice: 800,
+				SellingPrice:        decimal.NewFromInt(800),
+				CurrentSellingPrice: decimal.NewFromInt(800),
 				PercentageSold:      nil,
 				AmountSold:          nil,
 			},
@@ -65,7 +66,7 @@ func (suite *TestServiceSuite) TestUseCase_BuyWager() {
 	type args struct {
 		ctx         context.Context
 		wager       *dto.CreateWagerDto
-		buyingPrice float64
+		buyingPrice decimal.Decimal
 	}
 	tests := []struct {
 		name    string
@@ -80,9 +81,9 @@ func (suite *TestServiceSuite) TestUseCase_BuyWager() {
 					TotalWagerValue:   1000,
 					Odds:              40,
 					SellingPercentage: 50,
-					SellingPrice:      600,
+					SellingPrice:      decimal.NewFromInt(600),
 				},
-				buyingPrice: 100,
+				buyingPrice: decimal.NewFromInt(100),
 			},
 			wantErr: nil,
 		}, {
@@ -93,9 +94,9 @@ func (suite *TestServiceSuite) TestUseCase_BuyWager() {
 					TotalWagerValue:   1000,
 					Odds:              40,
 					SellingPercentage: 50,
-					SellingPrice:      600,
+					SellingPrice:      decimal.NewFromInt(600),
 				},
-				buyingPrice: 610,
+				buyingPrice: decimal.NewFromInt(610),
 			},
 			wantErr: ErrRequestInvalid,
 		},

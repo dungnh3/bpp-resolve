@@ -9,6 +9,7 @@ import (
 	"github.com/dungnh3/bpp-resolve/pkg/log"
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/mysql"
@@ -92,7 +93,7 @@ func (suite *TestServiceSuite) SetupTest() {
 		TotalWagerValue:   100,
 		Odds:              40,
 		SellingPercentage: 50,
-		SellingPrice:      70,
+		SellingPrice:      decimal.NewFromInt(70),
 	})
 	require.NoError(suite.T(), err)
 }

@@ -3,13 +3,14 @@ package repository
 import (
 	"context"
 	"github.com/dungnh3/bpp-resolve/internal/domain/model"
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
 type WagerRepository interface {
 	InitializeWager(ctx context.Context, wager *model.Wager) error
 	FindWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error)
-	RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice, sellingPrice float64) error
+	RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice, sellingPrice decimal.Decimal) error
 	FindWagers(ctx context.Context, offset, limit int) ([]*model.Wager, error)
 }
 
@@ -39,13 +40,13 @@ func (r *Repository) FindWagerByID(ctx context.Context, wagerId uint32) (*model.
 	return &wager, nil
 }
 
-func (r *Repository) RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice float64, sellingPrice float64) error {
+func (r *Repository) RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice, sellingPrice decimal.Decimal) error {
 	tx := r.db.WithContext(ctx).Model(&model.Wager{}).
 		Where("id = ?", wagerId).
 		Updates(map[string]interface{}{
 			"current_selling_price": gorm.Expr("current_selling_price - ?", buyingPrice),
 			"amount_sold":           gorm.Expr("IFNULL(amount_sold, 0) + ?", buyingPrice),
-			"percentage_sold":       gorm.Expr("IFNULL(percentage_sold, 0) + ?", 100*buyingPrice/sellingPrice),
+			"percentage_sold":       gorm.Expr("IFNULL(percentage_sold, 0) + ?", buyingPrice.Mul(decimal.NewFromInt(100)).Div(sellingPrice)),
 		})
 
 	if err := tx.Error; err != nil {

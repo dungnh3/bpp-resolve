@@ -7,6 +7,7 @@ import (
 	"github.com/dungnh3/bpp-resolve/internal/domain/repository"
 	"github.com/dungnh3/bpp-resolve/internal/dto"
 	"github.com/go-logr/logr"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -43,14 +44,14 @@ func (u *UseCase) FindWager(ctx context.Context, offset, limit int) ([]*model.Wa
 	return u.repo.FindWagers(ctx, offset, limit)
 }
 
-func (u *UseCase) BuyWager(ctx context.Context, wagerID uint32, buyingPrice float64) (*model.Purchase, error) {
+func (u *UseCase) BuyWager(ctx context.Context, wagerID uint32, buyingPrice decimal.Decimal) (*model.Purchase, error) {
 	wager, err := u.repo.FindWagerByID(ctx, wagerID)
 	if err != nil {
 		return nil, err
 	}
 
 	// buying_price must be lesser or equal to current_selling_price of the wager_id
-	if buyingPrice > wager.CurrentSellingPrice {
+	if buyingPrice.GreaterThan(wager.CurrentSellingPrice) {
 		return nil, ErrRequestInvalid
 	}
 
