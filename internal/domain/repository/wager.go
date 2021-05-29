@@ -32,7 +32,7 @@ func (r *Repository) FindWagers(ctx context.Context, offset, limit int) ([]*mode
 
 func (r *Repository) FindWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error) {
 	var wager model.Wager
-	tx := r.db.WithContext(ctx).First(&wager, wagerId)
+	tx := r.db.WithContext(ctx).Where("id = ?", wagerId).Find(&wager)
 	if err := tx.Error; err != nil {
 		return nil, err
 	}

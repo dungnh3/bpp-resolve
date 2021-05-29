@@ -9,6 +9,10 @@ import (
 	"github.com/go-logr/logr"
 )
 
+var (
+	ErrRequestInvalid = errors.New("request invalid")
+)
+
 type UseCase struct {
 	logger logr.Logger
 	repo   repository.IRepository
@@ -47,7 +51,7 @@ func (u *UseCase) BuyWager(ctx context.Context, wagerID uint32, buyingPrice floa
 
 	// buying_price must be lesser or equal to current_selling_price of the wager_id
 	if buyingPrice > wager.CurrentSellingPrice {
-		return nil, errors.New("request invalid! buying_price must be lesser or equal to current_selling_price")
+		return nil, ErrRequestInvalid
 	}
 
 	purchase := &model.Purchase{

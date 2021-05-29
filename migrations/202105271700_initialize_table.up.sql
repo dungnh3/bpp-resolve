@@ -11,7 +11,7 @@ create table if not exists wagers
             check (current_selling_price >= 0),
     percentage_sold       double null,
     amount_sold           double null,
-    placed_at             datetime(3) null
+    placed_at             timestamp null
 );
 
 
@@ -21,7 +21,7 @@ create table if not exists purchases
         primary key,
     wager_id     int unsigned not null,
     buying_price double not null,
-    bought_at    datetime(3) null
+    bought_at    timestamp null
 );
 
 
