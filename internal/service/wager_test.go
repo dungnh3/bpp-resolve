@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/dungnh3/bpp-resolve/internal/dto"
+	"github.com/shopspring/decimal"
 	"testing"
 )
 
@@ -21,7 +22,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					TotalWagerValue:   1000,
 					Odds:              20,
 					SellingPercentage: 50,
-					SellingPrice:      800,
+					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
 			want: true,
@@ -32,7 +33,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					TotalWagerValue:   0,
 					Odds:              20,
 					SellingPercentage: 50,
-					SellingPrice:      800,
+					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
 			want: false,
@@ -43,7 +44,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					TotalWagerValue:   1000,
 					Odds:              0,
 					SellingPercentage: 50,
-					SellingPrice:      800,
+					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
 			want: false,
@@ -54,7 +55,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					TotalWagerValue:   1000,
 					Odds:              20,
 					SellingPercentage: 120,
-					SellingPrice:      800,
+					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
 			want: false,
@@ -65,7 +66,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					TotalWagerValue:   1000,
 					Odds:              20,
 					SellingPercentage: 120,
-					SellingPrice:      -100,
+					SellingPrice:      decimal.NewFromInt(-100),
 				},
 			},
 			want: false,
