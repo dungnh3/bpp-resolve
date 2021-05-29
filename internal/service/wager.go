@@ -8,20 +8,29 @@ import (
 	"strconv"
 )
 
-func (s *Service) IsValidRequest(wager *dto.CreateWagerDto) bool {
-	if wager.TotalWagerValue <= 0 || // total_wager_value must be specified as a positive integer above 0
-		wager.Odds <= 0 || // odds must be specified as a positive integer above 0
-		wager.SellingPercentage > 100 || wager.SellingPercentage < 1 || // selling_percentage must be specified as an integer between 1 and 100
-		wager.SellingPrice.LessThan(decimal.NewFromInt(0)) { // selling_price must be specified as a positive decimal value to two decimal places, it is a monetary value
-		return false
+func (s *Service) IsValidRequest(wager *dto.CreateWagerDto) error {
+	if wager.TotalWagerValue <= 0 {
+		return ErrTotalWagerValueMustGreaterThan0
+	}
+
+	if wager.Odds <= 0 {
+		return ErrOddsValueMustGreaterThan0
+	}
+
+	if wager.SellingPercentage > 100 || wager.SellingPercentage < 1 {
+		return ErrSellingPercentageValue
+	}
+
+	if wager.SellingPrice.LessThan(decimal.NewFromInt(0)) {
+		return ErrSellingPriceValueMustGreaterThan0
 	}
 
 	// selling_price must be greater than total_wager_value * (selling_percentage / 100)
 	sp := float64(wager.TotalWagerValue) * float64(wager.SellingPercentage) / 100
 	if wager.SellingPrice.LessThanOrEqual(decimal.NewFromFloat(sp)) {
-		return false
+		return ErrSellingPriceValue
 	}
-	return true
+	return nil
 }
 
 func (s *Service) InitializeWager(ctx *gin.Context) {
@@ -31,8 +40,8 @@ func (s *Service) InitializeWager(ctx *gin.Context) {
 		return
 	}
 
-	if !s.IsValidRequest(&wagerDto) {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": ErrRequestInValid.Error()})
+	if err := s.IsValidRequest(&wagerDto); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

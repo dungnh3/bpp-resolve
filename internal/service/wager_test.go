@@ -13,7 +13,7 @@ func TestService_IsValidRequest(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want bool
+		want error
 	}{
 		{
 			name: "Testing => IsValidRequest() verify arguments to initialize wager success",
@@ -25,7 +25,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
-			want: true,
+			want: nil,
 		}, {
 			name: "Testing => IsValidRequest() failed, total_wager_value must be specified as a positive integer above 0",
 			args: args{
@@ -36,7 +36,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
-			want: false,
+			want: ErrTotalWagerValueMustGreaterThan0,
 		}, {
 			name: "Testing => IsValidRequest() failed, odds must be specified as a positive integer above 0",
 			args: args{
@@ -47,7 +47,7 @@ func TestService_IsValidRequest(t *testing.T) {
 					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
-			want: false,
+			want: ErrOddsValueMustGreaterThan0,
 		}, {
 			name: "Testing => IsValidRequest() failed, selling_percentage must be specified as an integer between 1 and 100",
 			args: args{
@@ -58,18 +58,29 @@ func TestService_IsValidRequest(t *testing.T) {
 					SellingPrice:      decimal.NewFromInt(800),
 				},
 			},
-			want: false,
+			want: ErrSellingPercentageValue,
 		}, {
 			name: "Testing => IsValidRequest() failed, selling_price must be specified as a positive decimal value to two decimal places, it is a monetary value",
 			args: args{
 				wager: &dto.CreateWagerDto{
 					TotalWagerValue:   1000,
 					Odds:              20,
-					SellingPercentage: 120,
+					SellingPercentage: 50,
 					SellingPrice:      decimal.NewFromInt(-100),
 				},
 			},
-			want: false,
+			want: ErrSellingPriceValueMustGreaterThan0,
+		}, {
+			name: "Testing => IsValidRequest() failed, selling_price must be greater than total_wager_value * (selling_percentage / 100)",
+			args: args{
+				wager: &dto.CreateWagerDto{
+					TotalWagerValue:   1000,
+					Odds:              20,
+					SellingPercentage: 50,
+					SellingPrice:      decimal.NewFromInt(500),
+				},
+			},
+			want: ErrSellingPriceValue,
 		},
 	}
 	for _, tt := range tests {
