@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	ErrRequestInvalid = errors.New("request invalid")
+	ErrRequestInvalid = errors.New("buying_price must be lesser or equal to current_selling_price of the wager_id")
 )
 
 type UseCase struct {
@@ -45,23 +45,33 @@ func (u *UseCase) FindWager(ctx context.Context, offset, limit int) ([]*model.Wa
 }
 
 func (u *UseCase) BuyWager(ctx context.Context, wagerID uint32, buyingPrice decimal.Decimal) (*model.Purchase, error) {
-	wager, err := u.repo.FindWagerByID(ctx, wagerID)
-	if err != nil {
-		return nil, err
-	}
-
-	// buying_price must be lesser or equal to current_selling_price of the wager_id
-	if buyingPrice.GreaterThan(wager.CurrentSellingPrice) {
-		return nil, ErrRequestInvalid
-	}
 
 	purchase := &model.Purchase{
 		WagerID:     wagerID,
 		BuyingPrice: buyingPrice,
 	}
 
-	if err = u.repo.Transaction(func(r repository.IRepository) error {
-		if err := r.RecordWagerPriceByID(ctx, wagerID, buyingPrice, wager.SellingPrice); err != nil {
+	if err := u.repo.Transaction(func(r repository.IRepository) error {
+		wager, err := r.SelectForUpdateWagerByID(ctx, wagerID)
+		if err != nil {
+			return err
+		}
+
+		// buying_price must be lesser or equal to current_selling_price of the wager_id
+		if buyingPrice.GreaterThan(wager.CurrentSellingPrice) {
+			return ErrRequestInvalid
+		}
+
+		currentSellingPrice := wager.CurrentSellingPrice.Sub(buyingPrice)
+
+		amountSold := buyingPrice
+		if wager.AmountSold != nil {
+			amountSold = amountSold.Add(*wager.AmountSold)
+		}
+
+		percentageSold := amountSold.Mul(decimal.NewFromInt(100)).Div(wager.SellingPrice)
+
+		if err := r.RecordPurchasingWagerByID(ctx, wagerID, currentSellingPrice, amountSold, percentageSold); err != nil {
 			return err
 		}
 

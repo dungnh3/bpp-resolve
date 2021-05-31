@@ -5,12 +5,15 @@ import (
 	"github.com/dungnh3/bpp-resolve/internal/domain/model"
 	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type WagerRepository interface {
 	InitializeWager(ctx context.Context, wager *model.Wager) error
 	FindWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error)
+	SelectForUpdateWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error)
 	RecordWagerPriceByID(ctx context.Context, wagerId uint32, buyingPrice, sellingPrice decimal.Decimal) error
+	RecordPurchasingWagerByID(ctx context.Context, wagerId uint32, currentSellingPrice, amountSold, percentageSold decimal.Decimal) error
 	FindWagers(ctx context.Context, offset, limit int) ([]*model.Wager, error)
 }
 
@@ -57,4 +60,32 @@ func (r *Repository) RecordWagerPriceByID(ctx context.Context, wagerId uint32, b
 		return ErrRecordAffectedNotExpected
 	}
 	return nil
+}
+
+func (r *Repository) RecordPurchasingWagerByID(ctx context.Context, wagerId uint32, currentSellingPrice, amountSold, percentageSold decimal.Decimal) error {
+	tx := r.db.WithContext(ctx).Model(&model.Wager{}).
+		Where("id = ?", wagerId).
+		Updates(map[string]interface{}{
+			"current_selling_price": currentSellingPrice,
+			"amount_sold":           amountSold,
+			"percentage_sold":       percentageSold,
+		})
+
+	if err := tx.Error; err != nil {
+		return err
+	}
+
+	if rowsAffected := tx.RowsAffected; rowsAffected != 1 {
+		return ErrRecordAffectedNotExpected
+	}
+	return nil
+}
+
+func (r *Repository) SelectForUpdateWagerByID(ctx context.Context, wagerId uint32) (*model.Wager, error) {
+	var wager model.Wager
+	tx := r.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).First(&wager, wagerId)
+	if err := tx.Error; err != nil {
+		return nil, err
+	}
+	return &wager, nil
 }
